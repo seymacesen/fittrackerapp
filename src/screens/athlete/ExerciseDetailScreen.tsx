@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { fetchExerciseDetails } from '../../services/HealthConnect/ExerciseSessionService';
-import type { BasicExerciseInfo } from '../../services/HealthConnect/ExerciseSessionService'; // ✅ SENDE VAR
+import type { BasicExerciseInfo } from '../../services/HealthConnect/ExerciseSessionService';
 
 type RouteParams = {
-    ExerciseDetails: { session: BasicExerciseInfo }; // ✅ Navigation paramı BasicExerciseInfo olacak
+    ExerciseDetails: { session: BasicExerciseInfo };
 };
 
 const ExerciseDetailScreen = () => {
@@ -21,14 +21,13 @@ const ExerciseDetailScreen = () => {
                 const data = await fetchExerciseDetails(session);
                 setDetails(data);
             } catch (error) {
-                console.error('Detay verisi alınamadı:', error);
+                console.error('Failed to fetch details:', error);
             } finally {
-                setLoading(false); // her durumda loading kapansın
+                setLoading(false);
             }
         };
         load();
     }, []);
-
 
     if (loading) {
         return <ActivityIndicator size="large" color="#bb86fc" style={{ marginTop: 50 }} />;

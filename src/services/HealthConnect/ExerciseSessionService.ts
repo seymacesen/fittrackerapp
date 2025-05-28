@@ -54,7 +54,6 @@ export const fetchExerciseDetails = async (
     session: BasicExerciseInfo
 ): Promise<DetailedExerciseInfo> => {
     const { startTime, endTime } = session;
-    console.log('🕒 Egzersiz zamanı:', startTime, '→', endTime);
 
     const [activeCaloriesData, totalCaloriesData, stepsData, distanceData, heartRateData] = await Promise.all([
         readRecords<'ActiveCaloriesBurned'>('ActiveCaloriesBurned', {
@@ -73,31 +72,16 @@ export const fetchExerciseDetails = async (
             timeRangeFilter: { operator: 'between', startTime, endTime },
         }),
     ]);
-    console.log('🔥 ActiveCaloriesBurned Records:', activeCaloriesData.records);
-    console.log('🔥 TotalCaloriesBurned Records:', totalCaloriesData.records);
-    activeCaloriesData.records.forEach((r, i) => {
-        console.log(`Active #${i}: joule = ${r.energy}`);
-    });
-
-    totalCaloriesData.records.forEach((r, i) => {
-        console.log(`Total #${i}: joule = ${r.energy}`);
-    });
-
 
     const activeCalories = activeCaloriesData.records.reduce((sum, c) => {
-        const record = c as unknown as ActiveCaloriesBurnedRecord;
-        const joules = Number(record.energy ?? 0); // ✅ düzeltildi
-        return sum + joules / 4184;
+        const kcal = (c as any).energy?.inKilocalories ?? 0;
+        return sum + kcal;
     }, 0);
-
 
     const totalCalories = totalCaloriesData.records.reduce((sum, c) => {
-        const record = c as unknown as ActiveCaloriesBurnedRecord;
-        const joules = Number(record.energy ?? 0); // ✅ düzeltildi
-        return sum + joules / 4184;
+        const kcal = (c as any).energy?.inKilocalories ?? 0;
+        return sum + kcal;
     }, 0);
-
-
 
     const calories = activeCalories > 0 ? activeCalories : totalCalories;
 

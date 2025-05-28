@@ -6,7 +6,6 @@ export const fetchLatestVo2Max = async (): Promise<{ vo2: number; time: string }
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
-    // 1. Hata Düzeltimi: Generic tipi string olarak belirt
     const { records } = await readRecords<'Vo2Max'>('Vo2Max', {
         timeRangeFilter: {
             operator: 'between',
@@ -17,16 +16,14 @@ export const fetchLatestVo2Max = async (): Promise<{ vo2: number; time: string }
 
     if (!records.length) return null;
 
-    // 2. Tarihe göre sıralama ekle
     const sortedRecords = records.sort(
         (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime()
     );
 
     const latest = sortedRecords[sortedRecords.length - 1];
 
-    // 3. 'value' hatası düzeltimi
     return {
-        vo2: latest.vo2MillilitersPerMinuteKilogram, // Direkt number değeri
-        time: latest.time, // startTime YOK
+        vo2: latest.vo2MillilitersPerMinuteKilogram,
+        time: latest.time,
     };
 };

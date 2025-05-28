@@ -19,17 +19,16 @@ export const permissions: Permission[] = [
     { recordType: 'TotalCaloriesBurned', accessType: 'read' },
     { recordType: 'ActiveCaloriesBurned', accessType: 'read' },
     { recordType: 'Distance', accessType: 'read' },
-
 ];
 
 export const initHealthConnect = async () => {
-    await initialize(); // önce başlat
+    await initialize();
 
-    const status = await getSdkStatus(); // sonra kontrol et
+    const status = await getSdkStatus();
     if (status !== SdkAvailabilityStatus.SDK_AVAILABLE) {
         throw new Error('Health Connect is not available on this device.');
     }
 
     const result = await requestPermission(permissions);
-    console.log('İzin sonucu:', JSON.stringify(result, null, 2));
+    console.log('Permission result:', JSON.stringify(result, null, 2));
 };

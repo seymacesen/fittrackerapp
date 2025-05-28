@@ -18,7 +18,6 @@ export const fetchTodayCalories = async (): Promise<number> => {
             const energy = (record as unknown as ActiveCaloriesBurnedRecord).energy;
             if (!energy) return sum;
 
-            // Birim kontrolü
             const joules = energy.unit === 'joules'
                 ? energy.value
                 : energy.unit === 'kilocalories'
