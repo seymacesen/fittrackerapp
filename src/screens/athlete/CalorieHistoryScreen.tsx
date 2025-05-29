@@ -1,36 +1,33 @@
-// src/screens/athlete/HeartRateHistoryScreen.tsx
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Modal } from 'react-native';
 import { Calendar } from 'react-native-calendars';
-import { fetchHeartRateSamplesByDate } from '../../services/HealthConnect/HeartRateService';
-import HeartRateChart from '../../components/charts/HeartRateChart';
-import HeartRateCard from '../../components/cards/HeartRateCard';
+import { fetchCalorieSamplesByDate } from '../../services/HealthConnect/CaloriesService';
+import CalorieChart from '../../components/charts/CalorieChart';
 import MiniStat from '../../components/stats/MiniStat';
-import HeartRateZonesBar from '../../components/charts/HeartRateZonesBar';
 import { PanGestureHandler, State, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
 import dayjs from 'dayjs';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-interface HeartRateSample {
+interface CalorieSample {
     time: string;
-    bpm: number;
+    calories: number;
 }
 
-const HeartRateHistoryScreen = () => {
+const CalorieHistoryScreen = () => {
     const navigation = useNavigation();
     const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
-    const [data, setData] = useState<HeartRateSample[]>([]);
+    const [data, setData] = useState<CalorieSample[]>([]);
     const [loading, setLoading] = useState(true);
     const [calendarVisible, setCalendarVisible] = useState(false);
 
     const loadData = useCallback(async (date: string) => {
         setLoading(true);
         try {
-            const result = await fetchHeartRateSamplesByDate(date);
+            const result = await fetchCalorieSamplesByDate(date);
             setData(result);
         } catch (error) {
-            console.error('Veri alınamadı:', error);
+            console.error('Failed to fetch calorie data:', error);
         } finally {
             setLoading(false);
         }
@@ -44,50 +41,45 @@ const HeartRateHistoryScreen = () => {
         const { translationX, state } = event.nativeEvent;
         if (state === State.END) {
             if (translationX > 50) {
-                // Swipe right: previous day
                 setSelectedDate(prev => dayjs(prev).subtract(1, 'day').format('YYYY-MM-DD'));
             } else if (translationX < -50) {
-                // Swipe left: next day
                 setSelectedDate(prev => dayjs(prev).add(1, 'day').format('YYYY-MM-DD'));
             }
         }
     }, []);
 
-    const average = data.length > 0 ? Math.round(data.reduce((sum, d) => sum + d.bpm, 0) / data.length) : null;
-    const max = data.length > 0 ? Math.max(...data.map(d => d.bpm)) : null;
-    const min = data.length > 0 ? Math.min(...data.map(d => d.bpm)) : null;
-    const resting = data.length > 0 ? Math.min(...data.map(d => d.bpm)) + 10 : null; // Placeholder for resting
+    // Calculate calorie stats
+    const total = data.length > 0 ? Math.round(data.reduce((sum, d) => sum + d.calories, 0)) : 0;
+    const max = data.length > 0 ? Math.max(...data.map(d => d.calories)) : 0;
+    const min = data.length > 0 ? Math.min(...data.map(d => d.calories)) : 0;
     const lastSample = data.length > 0 ? data[data.length - 1] : null;
 
     return (
         <PanGestureHandler onHandlerStateChange={onGestureEvent}>
-            <View style={{ flex: 1 }}>
-                <ScrollView style={styles.container}>
-                    {/* Top Section: Title, Date, BPM */}
+            <View style={styles.container}>
+
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <Icon name="arrow-back-ios" size={22} color="#fff" />
+                </TouchableOpacity>
+
+                <ScrollView style={styles.scrollViewContent} contentContainerStyle={{ paddingBottom: 32 }}>
                     <View style={styles.topSection}>
-                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                            <Icon name="arrow-back-ios" size={22} color="#fff" />
-                        </TouchableOpacity>
                         <View style={styles.centeredTopContent}>
-                            <Text style={styles.screenTitle}>Heart Rate</Text>
+                            <Text style={styles.screenTitle}>Calories</Text>
                             <TouchableOpacity onPress={() => setCalendarVisible(true)} activeOpacity={0.8} style={styles.dateRow}>
                                 <Text style={styles.selectedDateText}>
-                                    {new Date(selectedDate).toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' })}
+                                    {new Date(selectedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                                 </Text>
                                 <Text style={styles.dropdownIcon}>▼</Text>
                             </TouchableOpacity>
                         </View>
-                        {lastSample && (
-                            <View style={styles.bpmContainer}>
-                                <Text style={styles.bpmValue}>{lastSample.bpm}</Text>
-                                <Text style={styles.bpmUnit}>BPM</Text>
-                            </View>
-                        )}
-                        {lastSample && (
-                            <Text style={styles.bpmDate}>{new Date(lastSample.time).toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' })}</Text>
-                        )}
+                        <View style={styles.totalValueContainerLeftAligned}>
+                            <Text style={styles.totalValue}>{total}</Text>
+                            <Text style={styles.totalUnit}>kcal</Text>
+                        </View>
                     </View>
-                    {/* Calendar Modal */}
+
+
                     <Modal
                         visible={calendarVisible}
                         transparent
@@ -102,14 +94,14 @@ const HeartRateHistoryScreen = () => {
                                         setCalendarVisible(false);
                                     }}
                                     markedDates={{
-                                        [selectedDate]: { selected: true, selectedColor: '#f83d37' },
+                                        [selectedDate]: { selected: true, selectedColor: '#f46409' },
                                     }}
                                     theme={{
                                         backgroundColor: '#232323',
                                         calendarBackground: '#232323',
                                         dayTextColor: '#fff',
-                                        monthTextColor: '#f83d37',
-                                        arrowColor: '#f83d37',
+                                        monthTextColor: '#f46409',
+                                        arrowColor: '#f46409',
                                     }}
                                     style={styles.calendar}
                                 />
@@ -119,27 +111,29 @@ const HeartRateHistoryScreen = () => {
                             </View>
                         </View>
                     </Modal>
-                    {/* Chart Card */}
+
                     <View style={styles.chartCard}>
                         {loading ? (
-                            <ActivityIndicator size="large" color="#bb86fc" />
+                            <ActivityIndicator size="large" color="#f46409" />
                         ) : data.length === 0 ? (
                             <Text style={styles.empty}>No data found for {selectedDate}</Text>
                         ) : (
-                            <HeartRateChart data={data} />
+                            <CalorieChart data={data} chartColor={'#f46409'} />
                         )}
                     </View>
-                    {/* Stats Row */}
+
                     <View style={styles.statsRow}>
-                        <MiniStat label="Min" value={min ?? '-'} unit="bpm" />
-                        <MiniStat label="Avg" value={average ?? '-'} unit="bpm" />
-                        <MiniStat label="Max" value={max ?? '-'} unit="bpm" />
-                        <MiniStat label="Rest" value={resting ?? '-'} unit="bpm" />
+                        <MiniStat label="Total" value={total ?? '-'} unit="kcal" />
                     </View>
-                    {/* Heart Rate Zones Bar */}
-                    {data.length > 0 && (
-                        <HeartRateZonesBar age={23} data={data.map(d => d.bpm)} />
-                    )}
+
+                    <TouchableOpacity style={styles.infoCard}>
+                        <View>
+                            <Text style={styles.infoCardTitle}>Daily Summary</Text>
+                            <Text style={styles.infoCardValue}>{total} kcal Total</Text>
+                        </View>
+                        <Icon name="chevron-right" size={24} color="#bbb" />
+                    </TouchableOpacity>
+
                 </ScrollView>
             </View>
         </PanGestureHandler>
@@ -149,20 +143,29 @@ const HeartRateHistoryScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#121212',
+        backgroundColor: '#1a1a1a',
         padding: 0,
     },
-    topSection: {
-        alignItems: 'flex-start',
-        marginTop: 24,
-        marginBottom: 16,
+    scrollViewContent: {
         paddingHorizontal: 16,
+        paddingBottom: 24,
     },
     backButton: {
         position: 'absolute',
         top: 24,
         left: 16,
         zIndex: 1,
+    },
+    topSection: {
+        marginTop: 24,
+        marginBottom: 16,
+        paddingHorizontal: 16,
+        alignItems: 'flex-start',
+    },
+    centeredTopContent: {
+        alignSelf: 'center',
+        alignItems: 'center',
+        marginBottom: 8,
     },
     screenTitle: {
         fontSize: 20,
@@ -175,24 +178,34 @@ const styles = StyleSheet.create({
         color: '#bbb',
         marginBottom: 8,
     },
-    bpmContainer: {
+    valueContainer: {
         flexDirection: 'row',
         alignItems: 'flex-end',
         marginBottom: 2,
     },
-    bpmValue: {
+    totalValueContainer: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        marginBottom: 8,
+    },
+    totalValueContainerLeftAligned: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        marginBottom: 8,
+    },
+    totalValue: {
         fontSize: 40,
         fontWeight: 'bold',
         color: '#fff',
         marginRight: 6,
     },
-    bpmUnit: {
+    totalUnit: {
         fontSize: 18,
         color: '#bbb',
         fontWeight: 'bold',
         marginBottom: 4,
     },
-    bpmDate: {
+    valueDate: {
         fontSize: 14,
         color: '#bbb',
         marginBottom: 2,
@@ -212,7 +225,7 @@ const styles = StyleSheet.create({
     },
     closeModalBtn: {
         marginTop: 12,
-        backgroundColor: '#f83d37',
+        backgroundColor: '#f46409',
         borderRadius: 8,
         paddingVertical: 8,
         paddingHorizontal: 24,
@@ -250,17 +263,32 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 8,
+        width: undefined,
     },
     dropdownIcon: {
-        color: '#f83d37',
+        color: '#f46409',
         fontSize: 18,
         marginLeft: 6,
     },
-    centeredTopContent: {
-        alignSelf: 'center',
+    infoCard: {
+        backgroundColor: '#1e1e1e',
+        borderRadius: 16,
+        padding: 16,
+        flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 8,
+        justifyContent: 'space-between',
+        marginTop: 12,
+    },
+    infoCardTitle: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 4,
+    },
+    infoCardValue: {
+        color: '#bbb',
+        fontSize: 14,
     },
 });
 
-export default HeartRateHistoryScreen;
+export default CalorieHistoryScreen;

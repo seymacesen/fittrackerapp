@@ -1,17 +1,22 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import MiniStat from './MiniStat';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { MainStackParamList } from '../../navigation/MainStackNavigator';
 
 interface Props {
     calories: number;
     steps: number;
     moveMinutes: number;
+    navigation: NativeStackNavigationProp<MainStackParamList>;
 }
 
-const TopStatsRow: React.FC<Props> = ({ calories, steps, moveMinutes }) => {
+const TopStatsRow: React.FC<Props> = ({ calories, steps, moveMinutes, navigation }) => {
     return (
         <View style={styles.row}>
-            <MiniStat label="🔥 Calories" value={Math.round(calories)} unit="kcal" />
+            <TouchableOpacity onPress={() => navigation.navigate('CalorieHistory')}>
+                <MiniStat label="🔥 Calories" value={Math.round(calories)} unit="kcal" />
+            </TouchableOpacity>
             <MiniStat label="👣 Steps" value={steps} unit="" />
             <MiniStat label="⏱ Move" value={moveMinutes} unit="min" />
         </View>

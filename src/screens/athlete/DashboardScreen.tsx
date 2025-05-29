@@ -73,7 +73,7 @@ const DashboardScreen = () => {
         <View style={styles.container}>
             <Text style={styles.title}>Health</Text>
 
-            <TopStatsRow calories={calories} steps={steps} moveMinutes={moveMinutes} />
+            <TopStatsRow calories={calories} steps={steps} moveMinutes={moveMinutes} navigation={navigation} />
 
             <View style={styles.bottomCards}>
                 <SleepCard sleepHours={sleepHours} style={styles.halfCard} />
