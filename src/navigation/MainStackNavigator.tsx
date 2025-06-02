@@ -7,6 +7,8 @@ import ExerciseHistoryScreen from '../screens/athlete/ExerciseHistoryScreen';
 import ExerciseDetailScreen from '../screens/athlete/ExerciseDetailScreen';
 import HeartRateHistoryScreen from '../screens/athlete/HeartRateHistoryScreen';
 import CalorieHistoryScreen from '../screens/athlete/CalorieHistoryScreen';
+import SleepHistoryScreen from '../screens/athlete/SleepHistoryScreen';
+import StepHistoryScreen from '../screens/athlete/StepHistoryScreen';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const Tab = createBottomTabNavigator();
@@ -18,6 +20,8 @@ export type MainStackParamList = {
     CalorieHistory: undefined;
     ExerciseHistory: undefined;
     ExerciseDetails: { session: any };
+    SleepHistory: undefined;
+    StepHistory: undefined;
 };
 
 const ExerciseStack = () => (
@@ -57,6 +61,8 @@ const MainStackNavigator = () => (
         <Stack.Screen name="Tabs" component={TabNavigator} />
         <Stack.Screen name="HeartRateHistory" component={HeartRateHistoryScreen} />
         <Stack.Screen name="CalorieHistory" component={CalorieHistoryScreen} />
+        <Stack.Screen name="SleepHistory" component={SleepHistoryScreen} />
+        <Stack.Screen name="StepHistory" component={StepHistoryScreen} />
     </Stack.Navigator>
 );
 

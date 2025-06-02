@@ -17,7 +17,11 @@ const AthleteStackNavigator = () => {
     return (
         <Stack.Navigator>
             <Stack.Screen name="ExerciseHistory" component={ExerciseHistoryScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="ExerciseDetails" component={ExerciseDetailScreen} />
+            <Stack.Screen
+                name="ExerciseDetails"
+                component={ExerciseDetailScreen}
+                options={{ headerShown: true, title: 'Exercise Details' }}
+            />
             <Stack.Screen name="HeartRateHistory" component={HeartRateHistoryScreen} />
         </Stack.Navigator>
     );

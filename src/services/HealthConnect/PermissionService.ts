@@ -9,6 +9,7 @@ import {
 export const permissions: Permission[] = [
     { recordType: 'Steps', accessType: 'read' },
     { recordType: 'HeartRate', accessType: 'read' },
+    { recordType: 'RestingHeartRate', accessType: 'read' },
     { recordType: 'ExerciseSession', accessType: 'read' },
     { recordType: 'SleepSession', accessType: 'read' },
     { recordType: 'BloodPressure', accessType: 'read' },

@@ -17,6 +17,7 @@ export interface BasicExerciseInfo {
     exerciseType: number;
     exerciseName: string;
     title?: string;
+    calories?: number;
 }
 
 // Detay ekranı için type
@@ -26,6 +27,7 @@ export interface DetailedExerciseInfo {
     steps: number;
     distance: number;
     averageHeartRate: number | null;
+    heartRateSamples: Array<{ time: string; beatsPerMinute: number }>;
 }
 
 
@@ -39,14 +41,30 @@ export const fetchExerciseSessions = async (): Promise<BasicExerciseInfo[]> => {
         },
     });
 
-    return records.map((session) => ({
-        id: session.metadata?.id ?? `${session.startTime}-${session.endTime}`,
-        startTime: session.startTime,
-        endTime: session.endTime,
-        exerciseType: session.exerciseType,
-        exerciseName: getExerciseName(session.exerciseType),
-        title: session.title,
+    const sessionsWithCalories = await Promise.all(records.map(async (session) => {
+        const [activeCaloriesData] = await Promise.all([
+            readRecords<'ActiveCaloriesBurned'>('ActiveCaloriesBurned', {
+                timeRangeFilter: { operator: 'between', startTime: session.startTime, endTime: session.endTime },
+            }),
+        ]);
+
+        const calories = activeCaloriesData.records.reduce((sum, c) => {
+            const kcal = (c as any).energy?.inKilocalories ?? 0;
+            return sum + kcal;
+        }, 0);
+
+        return {
+            id: session.metadata?.id ?? `${session.startTime}-${session.endTime}`,
+            startTime: session.startTime,
+            endTime: session.endTime,
+            exerciseType: session.exerciseType,
+            exerciseName: getExerciseName(session.exerciseType),
+            title: session.title,
+            calories: calories > 0 ? calories : undefined,
+        };
     }));
+
+    return sessionsWithCalories;
 };
 
 // Seçilen bir egzersizin detaylarını getiren fonksiyon
@@ -115,5 +133,9 @@ export const fetchExerciseDetails = async (
         steps,
         distance,
         averageHeartRate,
+        heartRateSamples: heartRateSamples.map(sample => ({
+            time: sample.time,
+            beatsPerMinute: sample.beatsPerMinute ?? 0
+        }))
     };
 };

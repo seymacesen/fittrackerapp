@@ -1,6 +1,5 @@
-// src/components/charts/HeartRateChart.tsx
 import React from 'react';
-import { View, StyleSheet, Dimensions, Text } from 'react-native';
+import { View, StyleSheet, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 
 interface HeartRateSample {
@@ -12,38 +11,35 @@ interface Props {
     data: HeartRateSample[];
 }
 
-function getDecimalHour(time: string) {
-    let date;
-    if (time.includes('T')) {
-        date = new Date(time);
-        return date.getHours() + date.getMinutes() / 60;
-    } else {
-        const [h, m] = time.split(':').map(Number);
-        return h + (m || 0) / 60;
-    }
-}
+const formatTimeLabel = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.round(seconds % 60);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
 
-const mainHours = [0, 6, 12, 18, 24];
-const mainLabels = ['00:00', '06:00', '12:00', '18:00', '00:00'];
-
-const HeartRateChart: React.FC<Props> = ({ data }) => {
+const ExerciseHeartRateChart: React.FC<Props> = ({ data }) => {
     if (!data || data.length === 0) return null;
 
-    const values = data.map(d => d.bpm);
-    const totalPoints = values.length;
+    // Calculate total duration in seconds
+    const startTime = new Date(data[0].time).getTime();
+    const endTime = new Date(data[data.length - 1].time).getTime();
+    const totalDurationSeconds = (endTime - startTime) / 1000;
 
-    const labelIndexes = [0, Math.floor(totalPoints * 0.25), Math.floor(totalPoints * 0.5), Math.floor(totalPoints * 0.75), totalPoints > 0 ? totalPoints - 1 : 0];
-
-    const labels = Array(totalPoints).fill('');
-    labelIndexes.forEach((idx, i) => {
-        if (labels[idx] !== undefined) labels[idx] = mainLabels[i];
+    // ✅ Etiketleri örnek zamanlara göre hesapla
+    const labelCount = Math.min(5, Math.floor(data.length / 5) + 1);
+    const labels = Array.from({ length: labelCount }, (_, i) => {
+        const index = Math.floor((data.length - 1) * (i / (labelCount - 1)));
+        const relativeTime = (new Date(data[index].time).getTime() - startTime) / 1000;
+        return formatTimeLabel(relativeTime);
     });
+
+    const values = data.map(d => d.bpm);
 
     return (
         <View style={styles.chartContainer}>
             <LineChart
                 data={{
-                    labels: labels,
+                    labels,
                     datasets: [
                         {
                             data: values,
@@ -60,7 +56,7 @@ const HeartRateChart: React.FC<Props> = ({ data }) => {
                 chartConfig={{
                     backgroundGradientFrom: '#232323',
                     backgroundGradientTo: '#232323',
-                    color: (opacity = 1) => `rgba(255, 82, 82, ${opacity})`,
+                    color: (opacity = 1) => `rgba(211, 47, 47, ${opacity})`,
                     labelColor: () => '#bbb',
                     decimalPlaces: 0,
                     propsForDots: {
@@ -92,4 +88,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default HeartRateChart;
+export default ExerciseHeartRateChart;

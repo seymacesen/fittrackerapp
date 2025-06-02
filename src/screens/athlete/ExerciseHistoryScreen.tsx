@@ -40,7 +40,7 @@ const ExerciseHistoryScreen = () => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.header}>🏃 Exercise History</Text>
+            <Text style={styles.header}> Exercise History</Text>
 
             {loading ? (
                 <ActivityIndicator size="large" color="#bb86fc" />
@@ -64,7 +64,7 @@ const ExerciseHistoryScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#121212',
+        backgroundColor: '#000000',
         paddingHorizontal: 16,
         paddingTop: 40,
     },

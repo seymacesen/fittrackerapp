@@ -9,7 +9,10 @@ interface Props {
 const SleepCard: React.FC<Props> = ({ sleepHours, style }) => {
     return (
         <View style={[styles.card, style]}>
-            <Text style={styles.title}>Sleep Duration</Text>
+            <View style={styles.titleContainer}>
+                <Text style={styles.emoji}>🌙</Text>
+                <Text style={styles.title}>Sleep Duration</Text>
+            </View>
             <Text style={styles.hours}>{sleepHours.toFixed(1)} hrs</Text>
         </View>
     );
@@ -17,22 +20,31 @@ const SleepCard: React.FC<Props> = ({ sleepHours, style }) => {
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: '#dcedc8',
+        backgroundColor: '#1e1e1e',
         padding: 16,
         borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
+        height: '100%',
+    },
+    titleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    emoji: {
+        fontSize: 16,
+        marginRight: 4,
     },
     title: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#33691e',
-        marginBottom: 4,
+        color: '#ffffff',
     },
     hours: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: '#1b5e20',
+        color: '#b388ff',
     },
 });
 

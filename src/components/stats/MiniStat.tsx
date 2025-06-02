@@ -20,21 +20,17 @@ const MiniStat: React.FC<Props> = ({ label, value, unit }) => {
 
 const styles = StyleSheet.create({
     card: {
-        flex: 1,
-        backgroundColor: '#1e1e1e',
-        borderRadius: 12,
-        padding: 12,
+        width: '100%',
         alignItems: 'center',
         justifyContent: 'center',
-        marginHorizontal: 4,
     },
     label: {
-        color: '#bbb',
-        fontSize: 14,
+        color: '#ffffff',
+        fontSize: 15,
         marginBottom: 4,
     },
     value: {
-        color: '#fff',
+        color: '#ffffff',
         fontSize: 18,
         fontWeight: 'bold',
     },

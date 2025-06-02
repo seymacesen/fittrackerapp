@@ -16,12 +16,12 @@ const zoneColors = {
 };
 
 const formatDuration = (seconds: number) => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.round((seconds % 3600) / 60);
-    return `${hrs > 0 ? `${hrs} hour ` : ''}${mins} min`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.round(seconds % 60);
+    return `${minutes} min ${remainingSeconds > 0 ? `${remainingSeconds} sec` : ''}`;
 };
 
-const HeartRateZonesBar: React.FC<Props> = ({ age, data, sampleTimes }) => {
+const ExerciseHeartRateZonesBar: React.FC<Props> = ({ age, data, sampleTimes }) => {
     const maxHR = 220 - age;
 
     const zones = {
@@ -47,7 +47,6 @@ const HeartRateZonesBar: React.FC<Props> = ({ age, data, sampleTimes }) => {
 
         // Calculate time interval for this sample
         const currentTime = new Date(sampleTimes[i]).getTime();
-        // Son örnek için bir sonraki zaman mevcut zaman ile aynı kabul edilir
         const nextTime = i < sampleTimes.length - 1
             ? new Date(sampleTimes[i + 1]).getTime()
             : currentTime;
@@ -64,7 +63,7 @@ const HeartRateZonesBar: React.FC<Props> = ({ age, data, sampleTimes }) => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Daily heart rate zones</Text>
+            <Text style={styles.title}>Heart rate zones during exercise</Text>
             <View style={styles.barContainer}>
                 {Object.keys(zoneDurations).map((zone) => {
                     const duration = zoneDurations[zone as keyof typeof zoneDurations];
@@ -154,4 +153,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default HeartRateZonesBar;
+export default ExerciseHeartRateZonesBar; 

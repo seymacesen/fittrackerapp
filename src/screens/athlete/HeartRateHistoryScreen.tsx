@@ -1,8 +1,7 @@
 // src/screens/athlete/HeartRateHistoryScreen.tsx
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Modal } from 'react-native';
-import { Calendar } from 'react-native-calendars';
-import { fetchHeartRateSamplesByDate } from '../../services/HealthConnect/HeartRateService';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { fetchHeartRateSamplesByDate, fetchRestingHeartRateByDate, estimateRestingHeartRate } from '../../services/HealthConnect/HeartRateService';
 import HeartRateChart from '../../components/charts/HeartRateChart';
 import HeartRateCard from '../../components/cards/HeartRateCard';
 import MiniStat from '../../components/stats/MiniStat';
@@ -11,6 +10,8 @@ import { PanGestureHandler, State, PanGestureHandlerGestureEvent } from 'react-n
 import dayjs from 'dayjs';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import CalendarModal from '../../components/common/CalendarModal';
+import { useTheme } from '../../theme/ThemeContext';
 
 interface HeartRateSample {
     time: string;
@@ -18,17 +19,23 @@ interface HeartRateSample {
 }
 
 const HeartRateHistoryScreen = () => {
+    const theme = useTheme();
     const navigation = useNavigation();
     const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
     const [data, setData] = useState<HeartRateSample[]>([]);
+    const [restingData, setRestingData] = useState<HeartRateSample[]>([]);
     const [loading, setLoading] = useState(true);
     const [calendarVisible, setCalendarVisible] = useState(false);
 
     const loadData = useCallback(async (date: string) => {
         setLoading(true);
         try {
-            const result = await fetchHeartRateSamplesByDate(date);
-            setData(result);
+            const [heartRateResult, restingHeartRateResult] = await Promise.all([
+                fetchHeartRateSamplesByDate(date),
+                fetchRestingHeartRateByDate(date)
+            ]);
+            setData(heartRateResult);
+            setRestingData(restingHeartRateResult);
         } catch (error) {
             console.error('Veri alınamadı:', error);
         } finally {
@@ -56,25 +63,25 @@ const HeartRateHistoryScreen = () => {
     const average = data.length > 0 ? Math.round(data.reduce((sum, d) => sum + d.bpm, 0) / data.length) : null;
     const max = data.length > 0 ? Math.max(...data.map(d => d.bpm)) : null;
     const min = data.length > 0 ? Math.min(...data.map(d => d.bpm)) : null;
-    const resting = data.length > 0 ? Math.min(...data.map(d => d.bpm)) + 10 : null; // Placeholder for resting
+    const resting = estimateRestingHeartRate(data);
     const lastSample = data.length > 0 ? data[data.length - 1] : null;
 
     return (
         <PanGestureHandler onHandlerStateChange={onGestureEvent}>
             <View style={{ flex: 1 }}>
-                <ScrollView style={styles.container}>
+                <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
                     {/* Top Section: Title, Date, BPM */}
                     <View style={styles.topSection}>
                         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                            <Icon name="arrow-back-ios" size={22} color="#fff" />
+                            <Icon name="arrow-back-ios" size={22} color={theme.colors.text.primary} />
                         </TouchableOpacity>
                         <View style={styles.centeredTopContent}>
-                            <Text style={styles.screenTitle}>Heart Rate</Text>
+                            <Text style={[styles.screenTitle, { color: theme.colors.text.primary }]}>Heart Rate</Text>
                             <TouchableOpacity onPress={() => setCalendarVisible(true)} activeOpacity={0.8} style={styles.dateRow}>
-                                <Text style={styles.selectedDateText}>
+                                <Text style={[styles.selectedDateText, { color: theme.colors.text.secondary }]}>
                                     {new Date(selectedDate).toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' })}
                                 </Text>
-                                <Text style={styles.dropdownIcon}>▼</Text>
+                                <Text style={[styles.dropdownIcon, { color: theme.colors.accent.heartRate }]}>▼</Text>
                             </TouchableOpacity>
                         </View>
                         {lastSample && (
@@ -87,38 +94,17 @@ const HeartRateHistoryScreen = () => {
                             <Text style={styles.bpmDate}>{new Date(lastSample.time).toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' })}</Text>
                         )}
                     </View>
-                    {/* Calendar Modal */}
-                    <Modal
+
+                    <CalendarModal
                         visible={calendarVisible}
-                        transparent
-                        animationType="fade"
-                        onRequestClose={() => setCalendarVisible(false)}
-                    >
-                        <View style={styles.modalOverlay}>
-                            <View style={styles.modalCalendarContainer}>
-                                <Calendar
-                                    onDayPress={(day) => {
-                                        setSelectedDate(day.dateString);
-                                        setCalendarVisible(false);
-                                    }}
-                                    markedDates={{
-                                        [selectedDate]: { selected: true, selectedColor: '#f83d37' },
-                                    }}
-                                    theme={{
-                                        backgroundColor: '#232323',
-                                        calendarBackground: '#232323',
-                                        dayTextColor: '#fff',
-                                        monthTextColor: '#f83d37',
-                                        arrowColor: '#f83d37',
-                                    }}
-                                    style={styles.calendar}
-                                />
-                                <TouchableOpacity onPress={() => setCalendarVisible(false)} style={styles.closeModalBtn}>
-                                    <Text style={styles.closeModalText}>Close</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </Modal>
+                        onClose={() => setCalendarVisible(false)}
+                        onDayPress={(day) => {
+                            setSelectedDate(day.dateString);
+                            setCalendarVisible(false);
+                        }}
+                        selectedDate={selectedDate}
+                    />
+
                     {/* Chart Card */}
                     <View style={styles.chartCard}>
                         {loading ? (
@@ -138,7 +124,11 @@ const HeartRateHistoryScreen = () => {
                     </View>
                     {/* Heart Rate Zones Bar */}
                     {data.length > 0 && (
-                        <HeartRateZonesBar age={23} data={data.map(d => d.bpm)} />
+                        <HeartRateZonesBar
+                            age={23}
+                            data={data.map(d => d.bpm)}
+                            sampleTimes={data.map(d => d.time)}
+                        />
                     )}
                 </ScrollView>
             </View>
@@ -149,7 +139,6 @@ const HeartRateHistoryScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#121212',
         padding: 0,
     },
     topSection: {

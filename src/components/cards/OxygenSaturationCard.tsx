@@ -16,7 +16,7 @@ const OxygenSaturationCard: React.FC<Props> = ({ percentage, time }) => {
 
     return (
         <View style={styles.card}>
-            <Text style={styles.label}>🫁 Oxygen Saturation</Text>
+            <Text style={styles.label}>🫁 SpO₂</Text>
             <Text style={styles.value}>{percentage.toFixed(1)}%</Text>
             <Text style={styles.time}>Last at {displayTime}</Text>
         </View>
@@ -30,13 +30,14 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
-        flex: 1,
-        marginHorizontal: 6,
+        height: '100%',
+        width: '100%',
     },
     label: {
-        color: '#bbbbbb',
+        color: '#ffffff',
         fontSize: 16,
         marginBottom: 6,
+        fontWeight: '600',
     },
     value: {
         color: '#4fc3f7',

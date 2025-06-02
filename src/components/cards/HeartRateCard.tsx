@@ -26,14 +26,15 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
+        height: '100%',
     },
     label: {
-        color: '#bbbbbb',
+        color: '#ffffff',
         fontSize: 16,
         marginBottom: 6,
     },
     value: {
-        color: '#ff5c8d',
+        color: '#f73636',
         fontSize: 28,
         fontWeight: 'bold',
     },

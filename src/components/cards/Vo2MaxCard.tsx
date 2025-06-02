@@ -17,7 +17,7 @@ const Vo2MaxCard: React.FC<Props> = ({ vo2max, time }) => {
     return (
         <View style={styles.card}>
             <Text style={styles.label}>🧬 VO₂ Max</Text>
-            <Text style={styles.value}>{vo2max.toFixed(1)} ml/kg/min</Text>
+            <Text style={styles.value}>{vo2max.toFixed(1)} ml/kg</Text>
             <Text style={styles.time}>Last at {displayTime}</Text>
         </View>
     );
@@ -30,17 +30,17 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
-        flex: 1,
-        marginHorizontal: 6,
+        height: '100%',
     },
     label: {
-        color: '#bbbbbb',
+        color: '#ffffff',
         fontSize: 16,
         marginBottom: 6,
+        fontWeight: '600',
     },
     value: {
         color: '#81c784',
-        fontSize: 24,
+        fontSize: 28,
         fontWeight: 'bold',
     },
     time: {
