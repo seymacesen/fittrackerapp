@@ -91,6 +91,10 @@ export const fetchExerciseDetails = async (
         }),
     ]);
 
+    console.log('Exercise session time range:', { startTime, endTime });
+    console.log('Steps data records:', stepsData.records);
+    console.log('Steps data records length:', stepsData.records.length);
+
     const activeCalories = activeCaloriesData.records.reduce((sum, c) => {
         const kcal = (c as any).energy?.inKilocalories ?? 0;
         return sum + kcal;
@@ -104,9 +108,15 @@ export const fetchExerciseDetails = async (
     const calories = activeCalories > 0 ? activeCalories : totalCalories;
 
     const steps = stepsData.records.reduce(
-        (sum, s) => sum + ((s as StepsRecord).count ?? 0),
+        (sum, s) => {
+            const count = (s as StepsRecord).count ?? 0;
+            console.log('Step record:', { count, startTime: s.startTime, endTime: s.endTime });
+            return sum + count;
+        },
         0
     );
+    console.log('Total steps calculated:', steps);
+    console.log('Exercise type:', session.exerciseType);
 
     const distance = distanceData.records.reduce(
         (sum, d) => sum + (d.distance?.inKilometers ?? 0),

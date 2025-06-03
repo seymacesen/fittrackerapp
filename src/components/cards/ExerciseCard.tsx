@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import type { BasicExerciseInfo } from '../../services/HealthConnect/ExerciseSessionService';
+import { useTheme } from '../../theme/ThemeContext';
 
 interface Props {
     exercise: BasicExerciseInfo;
@@ -8,10 +9,15 @@ interface Props {
 }
 
 const ExerciseCard: React.FC<Props> = ({ exercise, onPress }) => {
+    const theme = useTheme();
     const formattedDate = new Date(exercise.startTime).toLocaleDateString([], {
         day: '2-digit',
         month: '2-digit'
     }).replace(/\./g, '/');
+
+    // Format start and end times
+    const formattedStartTime = new Date(exercise.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const formattedEndTime = new Date(exercise.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     return (
         <TouchableOpacity style={styles.card} onPress={onPress}>
@@ -22,6 +28,7 @@ const ExerciseCard: React.FC<Props> = ({ exercise, onPress }) => {
                     {exercise.calories && (
                         <Text style={styles.calories}>{exercise.calories.toFixed(0)} kcal</Text>
                     )}
+                    <Text style={styles.timeRange}>{`${formattedStartTime} - ${formattedEndTime}`}</Text>
                 </View>
                 <Text style={styles.date}>{formattedDate}</Text>
             </View>
@@ -49,7 +56,7 @@ const styles = StyleSheet.create({
     name: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#FFD700',
+        color: '#059212',
     },
     title: {
         fontSize: 14,
@@ -65,6 +72,11 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#666',
         marginLeft: 8,
+    },
+    timeRange: {
+        fontSize: 12,
+        color: '#bbb',
+        marginTop: 4,
     },
 });
 
