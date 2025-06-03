@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     hours: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: '#b388ff',
+        color: '#ad46ff',
     },
 });
 

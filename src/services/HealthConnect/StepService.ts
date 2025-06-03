@@ -1,4 +1,5 @@
 import { readRecords } from 'react-native-health-connect';
+import dayjs from 'dayjs';
 
 export const getTodaySteps = async (): Promise<number> => {
     const now = new Date();
@@ -57,4 +58,41 @@ export const fetchDailySteps = async (
     result.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     return result;
+};
+
+// Fetch step data in specified intervals for a single day
+export const fetchStepsInIntervals = async (
+    date: Date,
+    intervalMinutes: number
+): Promise<number[]> => {
+    const startOfDay = dayjs(date).startOf('day');
+    const endOfDay = dayjs(date).endOf('day');
+    const stepsByInterval: number[] = [];
+    const numberOfIntervals = (24 * 60) / intervalMinutes;
+
+    for (let i = 0; i < numberOfIntervals; i++) {
+        const intervalStart = startOfDay.add(i * intervalMinutes, 'minute');
+        const intervalEnd = intervalStart.add(intervalMinutes, 'minute');
+
+        // Ensure the end time does not go beyond the end of the day
+        const currentIntervalEnd = intervalEnd.isAfter(endOfDay) ? endOfDay : intervalEnd;
+
+        try {
+            const { records } = await readRecords('Steps', {
+                timeRangeFilter: {
+                    operator: 'between',
+                    startTime: intervalStart.toISOString(),
+                    endTime: currentIntervalEnd.toISOString(),
+                },
+            });
+
+            const totalStepsInInterval = records.reduce((sum, record: any) => sum + (record.count || 0), 0);
+            stepsByInterval.push(totalStepsInInterval);
+        } catch (error) {
+            console.error(`Error fetching steps for interval ${intervalStart.toISOString()} - ${currentIntervalEnd.toISOString()}:`, error);
+            stepsByInterval.push(0); // Add 0 steps in case of error
+        }
+    }
+
+    return stepsByInterval;
 };

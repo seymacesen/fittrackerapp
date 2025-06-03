@@ -1,191 +1,243 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
-import { fetchDailySteps } from '../../services/HealthConnect/StepService';
+import { fetchDailySteps, fetchStepsInIntervals } from '../../services/HealthConnect/StepService';
 import { PanGestureHandler, State, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
 import dayjs from 'dayjs';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { BarChart } from 'react-native-chart-kit';
+import { BarChart, LineChart } from 'react-native-chart-kit';
 import CalendarModal from '../../components/common/CalendarModal';
 import { useTheme } from '../../theme/ThemeContext';
+import { fetchTotalDistanceByDate } from '../../services/HealthConnect/DistanceService';
 
 const screenWidth = Dimensions.get('window').width;
 
 const StepHistoryScreen = () => {
     const navigation = useNavigation();
     const theme = useTheme();
-    const [selectedStartDate, setSelectedStartDate] = useState<string>(dayjs().subtract(6, 'day').format('YYYY-MM-DD')); // Default to 7 days ago
-    const [selectedEndDate, setSelectedEndDate] = useState<string>(dayjs().format('YYYY-MM-DD')); // Default to today
-    const [stepData, setStepData] = useState<{ date: string; steps: number }[]>([]);
+    const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD')); // State for single selected day
+    const [stepData, setStepData] = useState<number[]>([]); // Data will be an array of step counts per interval
     const [loading, setLoading] = useState(true);
     const [calendarVisible, setCalendarVisible] = useState(false);
+    const [showDailyDetails, setShowDailyDetails] = useState(false); // State to control visibility
+    const [totalDistance, setTotalDistance] = useState<number>(0); // State for total distance
 
     const loadStepData = useCallback(async () => {
         setLoading(true);
         try {
-            const startDate = new Date(selectedStartDate);
-            const endDate = new Date(selectedEndDate);
-            // Adjust end date to include the whole day
-            endDate.setHours(23, 59, 59, 999);
+            const date = dayjs(selectedDate).toDate();
+            const steps = await fetchStepsInIntervals(date, 30); // Fetch data in 30-minute intervals
+            setStepData(steps);
 
-            const data = await fetchDailySteps(startDate, endDate);
-            setStepData(data);
+            // Fetch total distance for the selected day
+            const distance = await fetchTotalDistanceByDate(selectedDate);
+            setTotalDistance(distance);
+
         } catch (error) {
-            console.error('Adım verisi alınamadı:', error);
+            console.error('Failed to fetch step or distance data:', error);
         } finally {
             setLoading(false);
         }
-    }, [selectedStartDate, selectedEndDate]);
+    }, [selectedDate]);
 
     useEffect(() => {
         loadStepData();
-    }, [selectedStartDate, selectedEndDate]);
+    }, [selectedDate]);
 
     const onDayPressCalendar = (day: any) => {
-        // Handle date selection logic here (e.g., select start, select end)
-        // For simplicity, let's just select a single day for now or handle a range.
-        // A common pattern is to select the start date on first tap, and end date on second tap.
-        // Let's implement a simple range selection: first tap is start, second tap is end.
-
-        if (!selectedStartDate || (selectedStartDate && selectedEndDate)) {
-            // If no start date selected, or both selected, start a new selection
-            setSelectedStartDate(day.dateString);
-            setSelectedEndDate(''); // Clear end date
-        } else if (day.dateString >= selectedStartDate) {
-            // Select end date
-            setSelectedEndDate(day.dateString);
-            setCalendarVisible(false); // Close calendar after selecting range
-        } else {
-            // If selected date is before start date, start a new selection
-            setSelectedStartDate(day.dateString);
-            setSelectedEndDate(''); // Clear end date
-        }
+        setSelectedDate(day.dateString); // Select single day
+        setCalendarVisible(false); // Close calendar
     };
 
-    // Helper to mark dates on calendar
+    // Helper to mark dates on calendar (only selected day)
     const markedDates = () => {
         const marked: any = {};
-        let currentDate = dayjs(selectedStartDate);
-        const end = dayjs(selectedEndDate);
-
-        while (currentDate.isBefore(end) || currentDate.isSame(end, 'day')) {
-            marked[currentDate.format('YYYY-MM-DD')] = { selected: true, color: '#a0c4ff', textColor: '#121212' };
-            currentDate = currentDate.add(1, 'day');
-        }
-        if (selectedStartDate && !selectedEndDate) { // Mark only start date if end date is not selected yet
-            marked[selectedStartDate] = { selected: true, color: '#a0c4ff', textColor: '#121212' };
-        }
-
+        marked[selectedDate] = {
+            selected: true,
+            selectedColor: theme.colors.accent.steps,
+            selectedTextColor: theme.colors.background,
+        };
         return marked;
     };
 
-    // Prepare data for the chart
-    const chartLabels = stepData.map(day => dayjs(day.date).format('MM/DD')); // Format labels as MM/DD
+    // Prepare data and labels for the chart (24 hours / 30 min intervals = 48 data points)
+    const chartValues: number[] = [];
+    const chartLabels: string[] = [];
+    const mainHours = [0, 6, 12, 18]; // Only show labels at these hours
+    const intervalMinutes = 30;
+    const numberOfIntervals = (24 * 60) / intervalMinutes;
+
+    for (let i = 0; i < numberOfIntervals; i++) {
+        const intervalStart = dayjs(selectedDate).startOf('day').add(i * intervalMinutes, 'minute');
+        const intervalEnd = intervalStart.add(intervalMinutes, 'minute');
+
+        const steps = stepData[i] || 0;
+        chartValues.push(steps);
+
+        // Only add labels at specific hours
+        if (intervalStart.minute() === 0 && mainHours.includes(intervalStart.hour())) {
+            chartLabels.push(intervalStart.format('HH:mm'));
+        } else {
+            chartLabels.push(' ');
+        }
+    }
+
     const chartData = {
         labels: chartLabels,
         datasets: [
             {
-                data: stepData.map(day => day.steps),
+                data: chartValues,
             },
         ],
     };
 
-    // Calculate total steps in the period
-    const totalSteps = stepData.reduce((sum, day) => sum + day.steps, 0);
+    // Calculate total steps for the displayed period (which is now a single day)
+    const totalSteps = chartValues.reduce((sum, steps) => sum + steps, 0);
+
+    const onGestureEvent = useCallback((event: PanGestureHandlerGestureEvent) => {
+        const { translationX, state } = event.nativeEvent;
+        if (state === State.END) {
+            if (translationX > 50) {
+                // Swipe right: previous day
+                setSelectedDate(prev => dayjs(prev).subtract(1, 'day').format('YYYY-MM-DD'));
+            } else if (translationX < -50) {
+                // Swipe left: next day
+                setSelectedDate(prev => dayjs(prev).add(1, 'day').format('YYYY-MM-DD'));
+            }
+        }
+    }, []);
 
     return (
-        <View style={{ flex: 1 }}>
-            <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-                {/* Top Section: Title, Date Range, Total Steps */}
-                <View style={styles.topSection}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <Icon name="arrow-back-ios" size={22} color={theme.colors.text.primary} />
-                    </TouchableOpacity>
-                    <View style={styles.centeredTopContent}>
-                        <Text style={[styles.screenTitle, { color: theme.colors.text.primary }]}>Adım Geçmişi</Text>
-                        <TouchableOpacity onPress={() => setCalendarVisible(true)} activeOpacity={0.8} style={styles.dateRangeRow}>
-                            <Text style={[styles.selectedDateRangeText, { color: theme.colors.text.secondary }]}>
-                                {`${dayjs(selectedStartDate).format('YYYY/MM/DD')} - ${selectedEndDate ? dayjs(selectedEndDate).format('YYYY/MM/DD') : 'Tarih Seç'}`}
-                            </Text>
-                            <Text style={[styles.dropdownIcon, { color: theme.colors.accent.steps }]}>▼</Text>
+        <PanGestureHandler onHandlerStateChange={onGestureEvent}>
+            <View style={{ flex: 1 }}>
+                <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+                    {/* Top Section: Title, Date, Total Steps */}
+                    <View style={styles.topSection}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                            <Icon name="arrow-back-ios" size={22} color={theme.colors.text.primary} />
                         </TouchableOpacity>
+                        <View style={styles.centeredTopContent}>
+                            <Text style={[styles.screenTitle, { color: theme.colors.text.primary }]}>Steps</Text>
+                            <TouchableOpacity onPress={() => setCalendarVisible(true)} activeOpacity={0.8} style={styles.dateRangeRow}>
+                                <Text style={[styles.selectedDateRangeText, { color: theme.colors.text.secondary }]}>
+                                    {dayjs(selectedDate).format('YYYY/MM/DD')}
+                                </Text>
+                                <Text style={[styles.dropdownIcon, { color: '#0065F8' }]}>▼</Text>
+                            </TouchableOpacity>
+                        </View>
+                        {/* Total Steps in Period */}
+                        {!loading && (
+                            <View style={styles.totalStepsContainer}>
+                                <Text style={styles.totalStepsValue}>{totalSteps}</Text>
+                                <Text style={styles.totalStepsUnit}>steps</Text>
+                            </View>
+                        )}
                     </View>
-                    {/* Total Steps in Period */}
+
+                    <CalendarModal
+                        visible={calendarVisible}
+                        onClose={() => setCalendarVisible(false)}
+                        onDayPress={onDayPressCalendar}
+                        selectedDate={selectedDate}
+                        marking={markedDates()}
+                    />
+
+                    {/* Step Chart */}
+                    <View style={styles.chartContainer}>
+                        {loading ? (
+                            <ActivityIndicator size="large" color={theme.colors.accent.steps} />
+                        ) : stepData.length === 0 ? (
+                            <Text style={styles.emptyChart}>No chart data available.</Text>
+                        ) : (
+                            <LineChart
+                                data={chartData}
+                                width={screenWidth - 32}
+                                height={220}
+                                yAxisLabel=""
+                                yAxisSuffix=" steps"
+                                chartConfig={{
+                                    backgroundColor: theme.colors.surface,
+                                    backgroundGradientFrom: theme.colors.surface,
+                                    backgroundGradientTo: theme.colors.surface,
+                                    decimalPlaces: 0,
+                                    color: (opacity = 1) => `rgba(0, 101, 248, ${opacity})`,
+                                    labelColor: (opacity = 1) => `rgba(${parseInt(theme.colors.text.primary.slice(1, 3), 16)}, ${parseInt(theme.colors.text.primary.slice(3, 5), 16)}, ${parseInt(theme.colors.text.primary.slice(5, 7), 16)}, ${opacity})`,
+                                    style: {
+                                        borderRadius: 16,
+                                    },
+                                    propsForVerticalLabels: {
+                                        fontSize: 10,
+                                    },
+                                    propsForBackgroundLines: {
+                                        strokeWidth: 1,
+                                        stroke: theme.colors.border,
+                                        strokeDasharray: '0',
+                                    },
+                                    propsForDots: { r: "0" },
+                                    strokeWidth: 2,
+                                    propsForLabels: {
+                                        fontSize: 10,
+                                        fill: theme.colors.text.primary,
+                                    },
+                                }}
+                                bezier
+                                style={styles.chart}
+                            />
+                        )}
+                    </View>
+
+                    {/* Daily Summary Section */}
                     {!loading && (
-                        <View style={styles.totalStepsContainer}>
-                            <Text style={styles.totalStepsValue}>{totalSteps}</Text>
-                            <Text style={styles.totalStepsUnit}>adım</Text>
+                        <View style={[styles.detailsContainer, { backgroundColor: theme.colors.surface }]}>
+                            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary, borderBottomColor: theme.colors.border }]}>Daily Summary</Text>
+                            {
+                                stepData.length === 0 ? (
+                                    <Text style={[styles.empty, { color: theme.colors.text.secondary }]}>No data available for this day.</Text>
+                                ) : (
+                                    <>
+                                        <View style={[styles.dayItem, { borderBottomColor: theme.colors.border }]}>
+                                            <Text style={[styles.dayText, { color: theme.colors.text.primary }]}>Total Steps:</Text>
+                                            <Text style={[styles.stepsText, { color: '#0065F8' }]}>{totalSteps}</Text>
+                                        </View>
+                                        <View style={[styles.dayItem, { borderBottomWidth: 0 }]}>
+                                            <Text style={[styles.dayText, { color: theme.colors.text.primary }]}>Total Distance:</Text>
+                                            <Text style={[styles.stepsText, { color: '#0065F8' }]}>{totalDistance.toFixed(2)} km</Text>
+                                        </View>
+                                    </>
+                                )
+                            }
                         </View>
                     )}
-                </View>
 
-                <CalendarModal
-                    visible={calendarVisible}
-                    onClose={() => setCalendarVisible(false)}
-                    onDayPress={onDayPressCalendar}
-                    selectedDate={selectedStartDate}
-                />
+                    {/* Optional: Keep the detailed interval data section if needed */}
+                    {showDailyDetails && (
+                        <View style={styles.detailsContainer}>
+                            <Text style={styles.sectionTitle}>Daily Details</Text>
+                            {loading ? (
+                                <ActivityIndicator size="large" color={theme.colors.accent.steps} />
+                            ) : stepData.length === 0 ? (
+                                <Text style={styles.empty}>No step data available.</Text>
+                            ) : (
+                                // Displaying data points from the intervals array
+                                stepData.map((steps, index) => {
+                                    const intervalStart = dayjs(selectedDate).startOf('day').add(index * 30, 'minute');
+                                    const intervalEnd = intervalStart.add(30, 'minute');
+                                    const timeRange = `${intervalStart.format('HH:mm')} - ${intervalEnd.format('HH:mm')}`;
 
-                {/* Step Chart */}
-                <View style={styles.chartContainer}>
-                    {loading ? (
-                        <ActivityIndicator size="large" color="#a0c4ff" />
-                    ) : stepData.length === 0 ? (
-                        <Text style={styles.emptyChart}>Grafik verisi bulunamadı.</Text>
-                    ) : (
-                        <BarChart
-                            data={chartData}
-                            width={screenWidth - 32}
-                            height={220}
-                            yAxisLabel=""
-                            yAxisSuffix=" adım"
-                            chartConfig={{
-                                backgroundColor: '#232323',
-                                backgroundGradientFrom: '#232323',
-                                backgroundGradientTo: '#232323',
-                                decimalPlaces: 0, // Steps are whole numbers
-                                color: (opacity = 1) => `rgba(160, 196, 255, ${opacity})`, // Default color
-                                labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                                style: {
-                                    borderRadius: 16,
-                                },
-                                propsForVerticalLabels: {
-                                    fontSize: 10,
-                                },
-                                propsForBackgroundLines: {
-                                    strokeWidth: 1,
-                                    stroke: 'rgba(255, 255, 255, 0.1)',
-                                    strokeDasharray: '0',
-                                },
-                            }}
-                            style={styles.chart}
-                            fromZero={true}
-                            showValuesOnTopOfBars={true}
-                        />
+                                    return (
+                                        <View key={index} style={styles.dayItem}>
+                                            <Text style={styles.dayText}>{timeRange}</Text>
+                                            <Text style={styles.stepsText}>{steps} steps</Text>
+                                        </View>
+                                    );
+                                })
+                            )}
+                        </View>
                     )}
-                </View>
 
-                {/* Daily Step Details */}
-                <View style={styles.detailsContainer}>
-                    <Text style={styles.sectionTitle}>Günlük Detaylar</Text>
-                    {loading ? (
-                        <ActivityIndicator size="large" color="#a0c4ff" />
-                    ) : stepData.length === 0 ? (
-                        <Text style={styles.empty}>Adım verisi bulunamadı.</Text>
-                    ) : (
-                        stepData.map((day, index) => (
-                            <View key={index} style={styles.dayItem}>
-                                <Text style={styles.dayText}>
-                                    {dayjs(day.date).format('YYYY/MM/DD')}
-                                </Text>
-                                <Text style={styles.stepsText}>{day.steps} adım</Text>
-                            </View>
-                        ))
-                    )}
-                </View>
-
-            </ScrollView>
-        </View>
+                </ScrollView>
+            </View>
+        </PanGestureHandler>
     );
 };
 
@@ -229,9 +281,9 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     dropdownIcon: {
-        color: '#a0c4ff',
         fontSize: 18,
         marginLeft: 6,
+        color: '#0065F8',
     },
     totalStepsContainer: {
         flexDirection: 'row',
@@ -296,7 +348,7 @@ const styles = StyleSheet.create({
     },
     stepsText: {
         fontSize: 16,
-        color: '#a0c4ff',
+        color: '#0065F8',
         fontWeight: 'bold',
     },
     empty: {
