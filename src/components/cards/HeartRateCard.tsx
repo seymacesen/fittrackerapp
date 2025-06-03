@@ -34,7 +34,7 @@ const styles = StyleSheet.create({
         marginBottom: 6,
     },
     value: {
-        color: '#f73636',
+        color: '#e7000b',
         fontSize: 28,
         fontWeight: 'bold',
     },

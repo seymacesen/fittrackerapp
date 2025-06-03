@@ -21,15 +21,15 @@ const TopStatsRow: React.FC<Props> = ({ calories, steps, moveMinutes, navigation
                 style={[styles.cardSection, { width: cardWidth }]}
                 onPress={() => navigation.navigate('CalorieHistory')}
             >
-                <MiniStat label="🔥 Calories" value={Math.round(calories)} unit="kcal" />
+                <MiniStat label="🔥 Calories" value={Math.round(calories)} unit="kcal" isFlexible={true} />
             </TouchableOpacity>
             <View style={styles.divider} />
             <View style={[styles.cardSection, { width: cardWidth }]}>
-                <MiniStat label="👣 Steps" value={steps} unit="" />
+                <MiniStat label="👣 Steps" value={steps} unit="" isFlexible={true} />
             </View>
             <View style={styles.divider} />
             <View style={[styles.cardSection, { width: cardWidth }]}>
-                <MiniStat label="⏱ Move" value={moveMinutes} unit="min" />
+                <MiniStat label="⏱ Move" value={moveMinutes} unit="min" isFlexible={true} />
             </View>
         </View>
     );

@@ -5,9 +5,10 @@ interface Props {
     label: string;
     value: number | string;
     unit?: string;
+    isFlexible?: boolean;
 }
 
-const MiniStat: React.FC<Props> = ({ label, value, unit }) => {
+const MiniStat: React.FC<Props> = ({ label, value, unit, isFlexible }) => {
     return (
         <View style={styles.card}>
             <Text style={styles.label}>{label}</Text>
@@ -20,9 +21,13 @@ const MiniStat: React.FC<Props> = ({ label, value, unit }) => {
 
 const styles = StyleSheet.create({
     card: {
-        width: '100%',
+        backgroundColor: '#1e1e1e',
         alignItems: 'center',
         justifyContent: 'center',
+        paddingVertical: 16,
+        paddingHorizontal: 8,
+        borderRadius: 8,
+        marginHorizontal: 4,
     },
     label: {
         color: '#ffffff',
@@ -31,7 +36,7 @@ const styles = StyleSheet.create({
     },
     value: {
         color: '#ffffff',
-        fontSize: 18,
+        fontSize: 17,
         fontWeight: 'bold',
     },
 });

@@ -34,8 +34,54 @@ const HeartRateHistoryScreen = () => {
                 fetchHeartRateSamplesByDate(date),
                 fetchRestingHeartRateByDate(date)
             ]);
-            setData(heartRateResult);
-            setRestingData(restingHeartRateResult);
+
+            console.log("Raw Heart Rate Result:", JSON.stringify(heartRateResult.slice(0, 5), null, 2));
+            console.log("Raw Resting Heart Rate Result:", JSON.stringify(restingHeartRateResult, null, 2));
+
+            // Validate and clean heart rate data
+            const validHeartRateData = heartRateResult
+                .filter(sample => {
+                    const isValid = sample &&
+                        typeof sample.bpm === 'number' &&
+                        !isNaN(sample.bpm) &&
+                        sample.bpm > 0 &&
+                        sample.bpm < 250; // Makul bir nabız aralığı
+
+                    if (!isValid) {
+                        console.log("Invalid heart rate sample:", sample);
+                    }
+                    return isValid;
+                })
+                .map(sample => ({
+                    time: sample.time,
+                    bpm: Math.round(sample.bpm)
+                }));
+
+            // Validate and clean resting heart rate data
+            const validRestingData = restingHeartRateResult
+                .filter(sample => {
+                    const isValid = sample &&
+                        typeof sample.bpm === 'number' &&
+                        !isNaN(sample.bpm) &&
+                        sample.bpm > 0 &&
+                        sample.bpm < 250;
+
+                    if (!isValid) {
+                        console.log("Invalid resting heart rate sample:", sample);
+                    }
+                    return isValid;
+                })
+                .map(sample => ({
+                    time: sample.time,
+                    bpm: Math.round(sample.bpm)
+                }));
+
+            console.log("Valid Heart Rate Data Count:", validHeartRateData.length);
+            console.log("Valid Resting Heart Rate Data Count:", validRestingData.length);
+            console.log("First few valid heart rate samples:", JSON.stringify(validHeartRateData.slice(0, 5), null, 2));
+
+            setData(validHeartRateData);
+            setRestingData(validRestingData);
         } catch (error) {
             console.error('Veri alınamadı:', error);
         } finally {
@@ -63,7 +109,7 @@ const HeartRateHistoryScreen = () => {
     const average = data.length > 0 ? Math.round(data.reduce((sum, d) => sum + d.bpm, 0) / data.length) : null;
     const max = data.length > 0 ? Math.max(...data.map(d => d.bpm)) : null;
     const min = data.length > 0 ? Math.min(...data.map(d => d.bpm)) : null;
-    const resting = estimateRestingHeartRate(data);
+    const resting = data.length > 0 ? Math.round(data.reduce((sum, d) => sum + d.bpm, 0) / data.length) : null;
     const lastSample = data.length > 0 ? data[data.length - 1] : null;
 
     return (

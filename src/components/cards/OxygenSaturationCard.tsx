@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     value: {
-        color: '#4fc3f7',
+        color: '#00a6f4',
         fontSize: 28,
         fontWeight: 'bold',
     },

@@ -2,6 +2,7 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions, Text } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
+import dayjs from 'dayjs';
 
 interface HeartRateSample {
     time: string;
@@ -12,32 +13,44 @@ interface Props {
     data: HeartRateSample[];
 }
 
-function getDecimalHour(time: string) {
-    let date;
-    if (time.includes('T')) {
-        date = new Date(time);
-        return date.getHours() + date.getMinutes() / 60;
-    } else {
-        const [h, m] = time.split(':').map(Number);
-        return h + (m || 0) / 60;
-    }
-}
-
 const mainHours = [0, 6, 12, 18, 24];
 const mainLabels = ['00:00', '06:00', '12:00', '18:00', '00:00'];
 
 const HeartRateChart: React.FC<Props> = ({ data }) => {
     if (!data || data.length === 0) return null;
 
-    const values = data.map(d => d.bpm);
-    const totalPoints = values.length;
+    // Sort data by time
+    const sortedData = [...data].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
 
-    const labelIndexes = [0, Math.floor(totalPoints * 0.25), Math.floor(totalPoints * 0.5), Math.floor(totalPoints * 0.75), totalPoints > 0 ? totalPoints - 1 : 0];
+    // If no data after sorting, return null
+    if (sortedData.length === 0) return null;
 
-    const labels = Array(totalPoints).fill('');
-    labelIndexes.forEach((idx, i) => {
-        if (labels[idx] !== undefined) labels[idx] = mainLabels[i];
+    // Determine the time range based on the first and last data points
+    const startTime = dayjs(sortedData[0].time);
+    const endTime = dayjs(sortedData[sortedData.length - 1].time);
+    const durationSeconds = endTime.diff(startTime, 'second');
+
+    const values: number[] = sortedData.map(d => d.bpm);
+    const labels: string[] = Array(values.length).fill('');
+
+    // Generate dynamic labels based on the time range
+    const labelCount = 5; // Start, 3 intermediate, End
+    const labelTimes = Array.from({ length: labelCount }, (_, i) => {
+        const time = startTime.add((durationSeconds / (labelCount - 1)) * i, 'second');
+        return time.format('HH:mm');
     });
+
+    // Place labels at approximately equal intervals in the labels array
+    const labelIndexes = Array.from({ length: labelCount }, (_, i) => {
+        return Math.floor((values.length - 1) * (i / (labelCount - 1)));
+    });
+
+    labelIndexes.forEach((index, i) => {
+        if (index < labels.length) {
+            labels[index] = labelTimes[i];
+        }
+    });
+
 
     return (
         <View style={styles.chartContainer}>
@@ -55,7 +68,7 @@ const HeartRateChart: React.FC<Props> = ({ data }) => {
                 yAxisSuffix=""
                 withInnerLines={false}
                 withOuterLines={false}
-                withVerticalLabels={true}
+                withVerticalLabels={true} // Ensure vertical labels are shown
                 withHorizontalLabels={true}
                 chartConfig={{
                     backgroundGradientFrom: '#232323',
