@@ -8,6 +8,7 @@ interface CalendarModalProps {
     onClose: () => void;
     onDayPress: (day: any) => void;
     selectedDate: string;
+    marking?: any;
 }
 
 const CalendarModal: React.FC<CalendarModalProps> = ({
@@ -15,6 +16,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({
     onClose,
     onDayPress,
     selectedDate,
+    marking
 }) => {
     const theme = useTheme();
     const accentColor = '#f83d37'; // Sabit kırmızı renk
@@ -30,9 +32,11 @@ const CalendarModal: React.FC<CalendarModalProps> = ({
                 <View style={[styles.modalCalendarContainer, { backgroundColor: theme.colors.surface }]}>
                     <Calendar
                         onDayPress={onDayPress}
-                        markedDates={{
-                            [selectedDate]: { selected: true, selectedColor: accentColor },
-                        }}
+                        markedDates={
+                            marking || {
+                                [selectedDate]: { selected: true, selectedColor: accentColor },
+                            }
+                        }
                         theme={{
                             backgroundColor: theme.colors.surface,
                             calendarBackground: theme.colors.surface,
