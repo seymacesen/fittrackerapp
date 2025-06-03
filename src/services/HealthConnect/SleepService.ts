@@ -22,9 +22,10 @@ export const fetchSleepSessionsByDate = async (
     const sleepSessions = records as SleepSessionRecord[];
 
     console.log(`Fetched ${sleepSessions.length} sleep sessions for ${selectedDate}`);
-    // Log stages for the first session to inspect the data structure
+    // Log the structure of the records and the first session's stages to inspect the data
+    console.log("Health Connect Sleep Records structure:", JSON.stringify(records, null, 2));
     if (sleepSessions.length > 0) {
-        console.log("Stages for the first session:", sleepSessions[0].stages);
+        console.log("Stages for the first session:", JSON.stringify(sleepSessions[0].stages, null, 2));
     }
 
     return sleepSessions;
